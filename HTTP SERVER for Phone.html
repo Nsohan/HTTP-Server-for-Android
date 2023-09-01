@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style type="text/css">
+
+  body {
+background-color: black;
+color: white; 
+width: 100%; 
+  }
+
+  .container {
+ background-color: white;
+ color: black;
+width: 700px;
+    border-radius: 20px;
+    border: 2px solid black;
+    padding: 2px;
+  }
+.heading{
+
+color: red;
+}
+#media_control{
+	
+		}
+		.media_button{
+			background: transparent;
+    		border: none;
+    		font-size: 50px;
+		    margin: 0px;
+		    padding: 0px;
+		}
+		#media_volume{
+    		font-size: 50px;
+    		font-weight: bold;
+		}
+</style>
+
+</head>
+<body>
+
+<p class="heading">Battery level: %BATT. Mode %Profile. </p>
+<br>
+
+<div id="say">
+		<div>Say Example</div>
+		<input type="button" value="Say Hello Out Loud On Phone" onclick="sayHello()"></input>		
+	</div>
+<br>
+<div id="write">
+		<div>Write Text Example</div>
+		<textarea id="text" placeholder="Write some text on the phone" name="message" rows="5" cols="30"></textarea>
+	</div>
+<br>
+
+<div id="SayWrite">
+		<div>Write Text to Say on Phone</div>
+		<textarea id="saytext" placeholder="Write text to say on phone" name="message" rows="5" cols="30"></textarea>
+	</div>
+<br>
+
+
+<div id="run">
+		<div>Write Autovoice Command</div>
+		<textarea id="runtext" placeholder="Write command to run in your phone" name="message" rows="2" cols="30"></textarea>
+	</div>
+<br>
+
+<div id="media_control">				
+    <div>Control the currently playing app on your phone</div>
+    <div>
+        <input value="⏪" command="previous" type="button" class="media_button" />
+        <input value="⏯️" command="play_pause" type="button" class="media_button" />
+        <input value="⏹️" command="stop" class="media_button" type="button" />
+        <input value="⏩" command="next" type="button" class="media_button" />
+    </div>
+    
+    <div id="current_song"></div>
+
+<br>
+%HttpSendNoti
+
+</body>
+
+<script> 
+
+const fetchGetText = async url => {
+	const result = await fetch(url);
+	return await result.text();
+}
+
+
+
+//Get write text
+const writeTextElement = document.querySelector("#text");
+writeTextElement.onkeydown = e =>{
+	if(e.keyCode != 13) return;
+
+	sendWrite(writeTextElement.value);
+}
+writeTextElement.onkeyup = e =>{
+	if(e.keyCode != 13) return;
+	writeTextElement.value = "";	
+}
+
+
+//get say write text
+const sayTextElement = document.querySelector("#saytext");
+sayTextElement.onkeydown = e =>{
+	if(e.keyCode != 13) return;
+	sendWriteToSay(sayTextElement.value);
+}
+sayTextElement.onkeyup = e =>{
+	if(e.keyCode != 13) return;
+	sayTextElement.value = "";	
+}
+
+
+//get run autovoice command
+const runTextElement = document.querySelector("#runtext");
+runTextElement.onkeydown = e =>{
+	if(e.keyCode != 13) return;
+
+	sendRun(runTextElement.value);
+}
+runTextElement.onkeyup = e =>{
+	if(e.keyCode != 13) return;
+	runTextElement.value = "";	
+}
+
+
+
+
+// send all command to tasker
+const sendFlash = command => fetch(`/command?flash=${encodeURIComponent(command)}`)
+
+const sendWrite = command => fetch(`/command?write=${encodeURIComponent(command)}`)
+
+
+const sendRun = command => fetch(`/command?run=${encodeURIComponent(command)}`)
+
+
+const sendWriteToSay = command => fetch(`/command?saytext=${encodeURIComponent(command)}`)
+
+const sendSay = command => fetch(`/command?say=${encodeURIComponent(command)}`); 
+
+const flashhello = () => sendFlash("hello from here")
+
+const sayHello = () => sendSay("Hello everyone!"); 
+
+const mediaVolumeElement = document.querySelector("#media_volume");
+document.querySelectorAll(".media_button").forEach(button => {
+	const command = button.getAttribute("command");
+	button.onclick = async () => {
+		mediaVolumeElement.innerText = await fetchGetText(`/mediacontrol?command=${command}`);
+	}
+});
+
+
+const updatePlayingSong = async () => {
+	try{
+		const song = await fetchGetText("/currentsong");
+		document.querySelector("#current_song").innerText = song;
+		notify(song);
+	}finally{
+		updatePlayingSong();	
+	}
+}
+updatePlayingSong();
+
+
+
+</script>
+</html>
